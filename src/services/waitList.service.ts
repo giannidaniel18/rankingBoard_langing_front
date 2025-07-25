@@ -1,38 +1,35 @@
-import api from '../config/api';
-import { WaitListDTO, Category } from '../types';
-import { competitiveCategories } from '../constants/competitiveCategories';
+import http from "../config/http";
+
+import { GameFromApi, WaitListDTO, WaitListEntry } from "../types/waitList";
 
 export const waitListService = {
-  async getWaitListGames(): Promise<Category[]> {
+  async getWaitListGames(): Promise<GameFromApi[]> {
     try {
-      // En un caso real, esto vendría de la API
-      // const response = await api.get('/games/categories');
-      // return response.data;
-      
-      // Por ahora retornamos los datos mock
-      return competitiveCategories;
+      const response = await http.get("/api/Game?offset=0&limit=100");
+      return response.data.results;
     } catch (error) {
-      console.error('Error fetching games:', error);
-      throw new Error('Failed to fetch games');
+      console.error("Error fetching waitlist games:", error);
+      throw new Error("Failed to fetch games");
     }
   },
 
-  async create(data: WaitListDTO): Promise<void> {
+  async getAll(): Promise<WaitListEntry[]> {
     try {
-      // En un caso real, esto sería el POST a la API
-      // const response = await api.post('/waitlist', data);
-      // return response.data;
-      
-      // Por ahora simulamos el envío exitoso
-      console.log('Datos enviados a la waitlist:', data);
-      
-      // Simulamos un delay de red
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      return Promise.resolve();
+      const response = await http.get("/waitlist");
+      return response.data;
     } catch (error) {
-      console.error('Error creating waitlist entry:', error);
-      throw new Error('Failed to join waitlist');
+      console.error("Error fetching waitlist entries:", error);
+      throw new Error("Failed to fetch waitlist entries");
+    }
+  },
+
+  async create(data: WaitListDTO): Promise<string> {
+    try {
+      const response = await http.post("/api/WaitList", data);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating waitlist entry:", error);
+      throw new Error("Failed to create waitlist entry");
     }
   },
 };

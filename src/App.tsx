@@ -1,26 +1,33 @@
-import React, { useState } from 'react';
-import { Trophy, Users, Target, Crown } from 'lucide-react';
-import { Toaster } from 'react-hot-toast';
-import { WaitListModal } from './components/WaitListModal';
-import { FeatureCard } from './components/FeatureCard';
+import { useState } from "react";
+import { Trophy, Users, Target, Crown } from "lucide-react";
+import { Toaster } from "react-hot-toast";
+import { WaitListModal } from "./components/WaitListModal";
+import { FeatureCard } from "./components/FeatureCard";
+import { useWaitList } from "./hooks/useWaitList";
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { fetchGames, games, isLoading, createEntry, error } = useWaitList();
+
+  const handleOpenModal = async () => {
+    await fetchGames();
+    setIsModalOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-purple-900 overflow-hidden">
-      <Toaster 
+      <Toaster
         position="top-right"
         toastOptions={{
           duration: 4000,
           style: {
-            background: '#1f2937',
-            color: '#fff',
-            border: '1px solid #374151',
+            background: "#1f2937",
+            color: "#fff",
+            border: "1px solid #374151",
           },
         }}
       />
-      
+
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-600/20 rounded-full blur-3xl"></div>
@@ -38,8 +45,11 @@ function App() {
             </div>
 
             {/* Main heading */}
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent leading-tight">
-              Jugar está bien. Pero ganar es más divertido 🔥
+            <h1>
+              <span className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent leading-tight">
+                Jugar está bien. Pero ganar es más divertido
+              </span>
+              <span className="text-4xl md:text-5xl">🔥</span>
             </h1>
 
             {/* Subtitle */}
@@ -49,7 +59,7 @@ function App() {
 
             {/* CTA Button */}
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={handleOpenModal}
               className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold py-4 px-8 rounded-xl text-lg transition-all duration-200 transform hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/25"
             >
               Unite a la lista de espera
@@ -99,9 +109,14 @@ function App() {
       </div>
 
       {/* Modal */}
-      <WaitListModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+      <WaitListModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        games={games}
+        isLoading={isLoading}
+        createEntry={createEntry}
+        fetchGames={fetchGames}
+        error={error}
       />
     </div>
   );

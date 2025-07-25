@@ -1,47 +1,91 @@
-import { useState, useEffect } from 'react';
-import { waitListService } from '../services/waitList.service';
-import { Category, WaitListDTO } from '../types';
-import toast from 'react-hot-toast';
+import { useState } from "react";
+import { waitListService } from "../services/waitList.service";
+import { GameCategory, GameFromApi, GamesData, WaitListDTO, WaitListEntry } from "../types/waitList";
 
 export const useWaitList = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [games, setGames] = useState<GamesData>();
+  const [entries, setEntries] = useState<WaitListEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadCategories();
-  }, []);
-
-  const loadCategories = async () => {
+  const fetchGames = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      const data = await waitListService.getWaitListGames();
-      setCategories(data);
-    } catch (error) {
-      toast.error('Error al cargar las categorías');
+      const gamesData = await waitListService.getWaitListGames();
+      const gamesDataTransformed = transformToGamesData(gamesData);
+      setGames(gamesDataTransformed);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error fetching games");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const submitWaitList = async (data: WaitListDTO) => {
+  const fetchEntries = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      setSubmitting(true);
+      const entriesData = await waitListService.getAll();
+      setEntries(entriesData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error fetching entries");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const createEntry = async (data: WaitListDTO): Promise<string> => {
+    setIsLoading(true);
+    setError(null);
+    try {
       await waitListService.create(data);
-      toast.success('¡Te uniste a la lista de espera exitosamente!');
-      return true;
-    } catch (error) {
-      toast.error('Error al unirse a la lista de espera');
-      return false;
+      return "ok";
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Error creating entry";
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
-      setSubmitting(false);
+      setIsLoading(false);
     }
   };
 
+  const transformToGamesData = (games: GameFromApi[]): GamesData => {
+    const gamesByCategory = games.reduce((acc, game) => {
+      const categoryId = game.category.id;
+      if (!acc[categoryId]) {
+        acc[categoryId] = {
+          id: game.category.id,
+          title: game.category.name,
+          options: [],
+        };
+      }
+      acc[categoryId].options.push({
+        id: game.id,
+        name: game.name,
+      });
+      return acc;
+    }, {} as Record<number, GameCategory>);
+
+    // Add "Otros" option to each category
+    const addOtrosOption = (category: GameCategory): GameCategory => ({
+      ...category,
+      options: [...category.options, { id: 0, name: "Otros" }],
+    });
+
+    return {
+      esports: addOtrosOption(gamesByCategory[1] || { id: 1, title: "Esports", options: [] }),
+      boardGames: addOtrosOption(gamesByCategory[2] || { id: 2, title: "Board Games", options: [] }),
+      sports: addOtrosOption(gamesByCategory[3] || { id: 3, title: "Sports", options: [] }),
+    };
+  };
   return {
-    categories,
-    loading,
-    submitting,
-    submitWaitList,
+    games,
+    entries,
+    isLoading,
+    error,
+    fetchGames,
+    fetchEntries,
+    createEntry,
   };
 };
